@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ethical Evaluation Study</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Firebase SDK -->
+  <script src="/__/firebase/8.10.1/firebase-app.js"></script>
+  <script src="/__/firebase/8.10.1/firebase-firestore.js"></script>
+  <script src="/__/firebase/init.js"></script>
+  <style>
+    :root { --brand:#0d6efd; --ok:#198754; --bg:#f9fafc; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:#333; }
+    nav { background:var(--brand); color:#fff; padding:1rem 2rem; display:flex; justify-content:space-between; align-items:center; font-weight:600; position:sticky; top:0; z-index:1000; }
+    nav a { color:#fff; margin-left:1rem; text-decoration:none; cursor:pointer; font-weight:500; }
+    nav a:hover { text-decoration:underline; }
+    main { display:flex; flex-direction:column; align-items:center; padding:2rem 1rem; }
+    .card { background:#fff; border-radius:12px; padding:1.25rem 1.5rem; box-shadow:0 4px 14px rgba(0,0,0,.1); width:100%; max-width:960px; }
+    .dashboard-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin:1rem 0 1.25rem; }
+    .metric { background:#fff; border-radius:10px; padding:1rem; box-shadow:0 2px 10px rgba(0,0,0,.08); text-align:center; }
+    .metric h4 { margin:.25rem 0 0; font-weight:600; font-size:.95rem; color:#555; }
+    .metric h3 { margin:.25rem 0 .1rem; font-size:1.25rem; }
+    .primary-btn { padding:10px 18px; background:var(--ok); color:#fff; border:none; border-radius:8px; font-size:16px; cursor:pointer; }
+    .primary-btn:active { transform:translateY(1px); }
+    .flex { display:flex; gap:20px; justify-content:center; align-items:center; flex-wrap:wrap; }
+    .hidden { display:none; }
+    .text-box { width:100%; min-height:150px; margin:24px auto 18px; border-radius:8px; border:1px solid rgba(0,0,0,.1); padding:1rem; font-size:1.1rem; line-height:1.6; }
+    .rating-scale { display:flex; justify-content:center; gap:10px; margin-top:1rem; }
+    .rating-btn { padding:10px 20px; border:1px solid #ccc; border-radius:8px; cursor:pointer; background:#fff; }
+    .rating-btn:hover { background:#f0f0f0; }
+    .breakdown { display:grid; grid-template-columns:repeat(2,minmax(220px,1fr)); gap:18px; }
+    @media (max-width:560px){ .breakdown{ grid-template-columns:1fr; } }
+    canvas { margin-top:1.25rem; max-width:100%; }
+    #lineChart, #rtChart { pointer-events:none; }
+    .muted { color:#666; font-size:.95rem; }
+    #admin-table { width:100%; border-collapse:collapse; margin-top:1rem; }
+    #admin-table th, #admin-table td { border:1px solid #ddd; padding:8px; text-align:left; }
+    #admin-table th { background-color:#f2f2f2; }
+    .ui-select, .ui-input{
+  width:100%;
+  margin-top:6px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(0,0,0,.15);
+  background:#fff;
+  font-size:15px;
+  outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+
+.ui-select:focus, .ui-input:focus{
+  border-color: rgba(13,110,253,.55);
+  box-shadow: 0 0 0 4px rgba(13,110,253,.12);
+}
+
+.ui-select{
+  appearance:none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #6c757d 50%),
+    linear-gradient(135deg, #6c757d 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 12px) calc(50% - 3px);
+  background-size:6px 6px, 6px 6px;
+  background-repeat:no-repeat;
+}
+
+.req{ color:#b02a37; font-weight:600; }
+
+  </style>
+</head>
+<body>
+  <nav>
+    <span class="logo">🔬 Ethical Evaluation Study</span>
+    <div>
+      <a onclick="showExperiment()">Experiment</a>
+      <a onclick="showAdmin()">Admin</a>
+    </div>
+  </nav>
+
+
+  <main>
+   <!-- Instructions + Consent (single screen) -->
+<div id="intro" class="card">
+  <h2>Instructions & Consent</h2>
+
+  <p class="muted">
+    In this study, you will evaluate a series of short research proposals.
+    For each proposal, please select the response that best reflects your own judgment.
+  </p>
+
+  <p class="muted">
+    There are no right or wrong answers. This is not a test, and you will not be judged in any way.
+    Some proposals may feel clear, others ambiguous. Please rely on your immediate impression.
+  </p>
+
+  <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">
+
+  <p class="muted">
+    Your participation is voluntary and anonymous. You may stop at any time.
+    No personal identifying information will be collected.
+  </p>
+
+  <ul style="margin-left:1.25rem">
+    <li>You will be shown about 50 short texts to evaluate.</li>
+    <li>No identifying data will be stored.</li>
+    <li>Approx. duration: 8-10 minutes.</li>
+  </ul>
+
+  <label style="display:flex;align-items:center;gap:10px;margin-top:12px;">
+    <input type="checkbox" id="ageConsent">
+    <span>I confirm that I am 18 years old or older</span>
+  </label>
+
+  <div class="flex" style="margin-top:1rem">
+    <button id="agree-btn" class="primary-btn" disabled>
+      I Agree & Start
+    </button>
+  </div>
+</div>
+
+
+<!-- Demographics  -->
+<div id="demographics" class="card hidden">
+  <h2>Background questions</h2>
+
+  <label>Gender: <span class="req">*</span>
+    <select id="demo-gender" class="ui-select" required>
+      <option value="" selected disabled>Select…</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+      <option value="Other">Other</option>
+      <option value="Prefer not to answer">Prefer not to answer</option>
+    </select>
+  </label>
+
+  <div id="gender-other-wrap" class="hidden" style="margin-top:10px;">
+    <label>If "Other", please specify: <span class="req">*</span>
+      <input id="demo-gender-text" class="ui-input" type="text" />
+    </label>
+  </div>
+
+  <div style="margin-top:14px;">
+    <label>Age (18+): <span class="req">*</span>
+      <input id="demo-age" class="ui-input" type="number" min="18" max="99" required />
+    </label>
+  </div>
+
+  <div style="margin-top:14px;">
+    <label>Are you right- or left-handed? <span class="req">*</span>
+      <select id="demo-handedness" class="ui-select" required>
+        <option value="" selected disabled>Select…</option>
+        <option value="Right">Right handed</option>
+        <option value="Left">Left handed</option>
+      </select>
+    </label>
+  </div>
+
+  <div style="margin-top:14px;">
+    <label>Do you wear corrective lenses? <span class="req">*</span>
+      <select id="demo-glasses" class="ui-select" required>
+        <option value="" selected disabled>Select…</option>
+        <option value="No">No</option>
+        <option value="Yes_not_wearing">Yes, but I'm not wearing them now</option>
+        <option value="Yes_wearing">Yes, and I am wearing them now</option>
+      </select>
+    </label>
+  </div>
+
+  <div style="margin-top:14px;">
+    <label>Is English your only native language? <span class="req">*</span>
+      <select id="demo-english" class="ui-select" required>
+        <option value="" selected disabled>Select…</option>
+        <option value="Yes_only">Yes</option>
+        <option value="No_not_native">No, English is not my native language</option>
+        <option value="No_bilingual">No, I spoke English and other languages growing up</option>
+      </select>
+    </label>
+  </div>
+
+  <div style="margin-top:14px;">
+    <label>What is your primary native language? <span class="req">*</span>
+      <select id="demo-lang-primary" class="ui-select" required>
+        <option value="" selected disabled>Select…</option>
+        <!-- options will be injected by JS -->
+      </select>
+    </label>
+  </div>
+
+  <div id="lang-other-wrap" class="hidden" style="margin-top:10px;">
+    <label>If "Other", please specify: <span class="req">*</span>
+      <input id="demo-lang-other" class="ui-input" type="text" />
+    </label>
+  </div>
+
+  <p id="demo-error" class="hidden" style="margin-top:14px;color:#b02a37;font-size:.95rem;">
+    Please complete all required fields before continuing.
+  </p>
+
+  <div class="flex" style="margin-top:16px;">
+    <button id="demographics-next" class="primary-btn">Continue to task</button>
+  </div>
+</div>
+
+
+
+<!-- Experiment (now hidden initially; no start button) -->
+<div id="experiment" class="card hidden"></div>
+
+<!-- Post-study questions -->
+<div id="poststudy" class="card hidden">
+  <h2>Final questions</h2>
+
+  <!-- ease -->
+  <label>Did you find the task easy or difficult?
+    <select id="q-ease" style="width:100%;margin-top:4px;">
+      <option value="">Select…</option>
+      <option value="1_Very_easy">Very easy</option>
+      <option value="2_Easy">Easy</option>
+      <option value="3_Somewhat_easy">Somewhat easy</option>
+      <option value="4_Neutral">Neutral</option>
+      <option value="5_Somewhat_difficult">Somewhat difficult</option>
+      <option value="6_Difficult">Difficult</option>
+      <option value="7_Very_difficult">Very difficult</option>
+    </select>
+  </label><br><br>
+
+  <!-- difficulty -->
+  <label>Do you think that it became easier or harder to find unethical studies as the study progressed?
+    <select id="q-difficulty" style="width:100%;margin-top:4px;">
+      <option value="">Select…</option>
+      <option value="easier">It became easier to find unethical studies as the study progressed</option>
+      <option value="harder">It became harder to find unethical studies as the study progressed</option>
+      <option value="same">It was about the same throughout the study</option>
+      <option value="not_sure">I'm not sure</option>
+    </select>
+  </label><br><br>
+
+  <!-- freq -->
+  <label>Do you feel that the amount of unethical experiments in each series changed during the study?
+    <select id="q-did-freq-change" style="width:100%;margin-top:4px;">
+      <option value="">Select…</option>
+      <option value="no_same_number">No, there were the same number of unethical experiments throughout the study</option>
+      <option value="yes_fewer">Yes, there were fewer unethical experiments as the study went on</option>
+      <option value="yes_more">Yes, there were more unethical experiments as the study went on</option>
+      <option value="not_sure">I'm not sure</option>
+    </select>
+  </label><br><br>
+
+  
+
+  <!-- def -->
+  <label>By the end of the study, do you think that your definition of what counted as an “unethical” experiment changed?
+    <select id="q-def" style="width:100%;margin-top:4px;">
+      <option value="">Select…</option>
+      <option value="1_no_change">No, I think that my definition of what counted as an unethical experiment did not change during the study.</option>
+      <option value="2_expanded">Yes, I think my definition of what counts as an unethical experiment expanded &mdash; I counted a wider range of experiments as unethical at the end of the study compared to the beginning of the study.</option>
+      <option value="3_narrowed">Yes, I think my definition of what counts as an unethical experiment narrowed &mdash; I counted a smaller range of experiments as unethical at the end of the study compared to the beginning of the study.</option>
+      <option value="4_not_sure">I'm not sure if my definition changed.</option>
+      <option value="5_dont_understand">I don't understand this question.</option>
+    </select>
+  </label><br><br>
+
+  <!-- hypothesis -->
+  <label>What do you think this study was about?
+    <textarea id="q-hypothesis" rows="3" style="width:100%;margin-top:4px;"></textarea>
+  </label><br><br>
+
+  <!-- comments -->
+  <label>If you have any other comments about the study, please let us know here:
+    <textarea id="q-comments" rows="3" style="width:100%;margin-top:4px;"></textarea>
+  </label><br><br>
+
+  <button id="poststudy-submit" class="primary-btn">Submit &amp; See Results</button>
+</div>
+
+
+
+<!-- Debrief (new) -->
+<div id="debrief" class="card hidden">
+  <h2>Debrief</h2>
+  <p class="muted">
+    Thanks! This study examines how judgments shift when the prevalence of
+    unethical examples decreases (prevalence-induced concept change).
+  </p>
+  <div class="flex" style="margin-top:1rem">
+    <button class="primary-btn" onclick="showPersonalSummary()">View Results</button>
+  </div>
+</div>
+
+
+  
+  
+
+    <!-- Personal Summary -->
+    <div id="personal-summary" class="card hidden">
+      <h2>Your Results</h2>
+      <div class="dashboard-metrics">
+        <div class="metric">
+          <h4>Your Rejection Rate</h4>
+          <h3 id="personal-avg"></h3>
+        </div>
+        <div class="metric">
+          <h4>Global Rejection Rate</h4>
+          <h3 id="global-avg"></h3>
+        </div>
+      </div>
+      <div class="metric">
+        <h4>Your Response Distribution</h4>
+        <p id="personal-dist"></p>
+      </div>
+      <div class="metric" style="margin-top: 1rem;">
+          <h4>You vs. Others</h4>
+          <p id="group-comparison"></p>
+      </div>
+      <div class="flex" style="margin-top: 1.5rem;">
+        <button class="primary-btn" onclick="startExperiment()">Start New Experiment</button>
+      </div>
+    </div>
+
+
+    <!-- Admin -->
+    <div id="admin" class="card hidden">
+        <h2>Admin View</h2>
+        <table id="admin-table">
+            <thead>
+                <tr>
+                    <th>Run ID</th>
+                    <th>Timestamp</th>
+                    <th>Quality Flags</th>
+                </tr>
+            </thead>
+            <tbody id="admin-table-body"></tbody>
+        </table>
+    </div>
+  </main>
+
+
+  <script>
+  // --- Firebase ---
+  const db = firebase.firestore();
+
+  // --- Globals ---
+  let trialIndex = 0;
+  let responses  = [];
+  let stimuli    = [];
+  let rtChart = null;
+  let participantId = null;
+  let demographics = {};
+  let postStudy = {};
+  let runStartTime = null;
+  let lastRun = null;
+  let responseFormat = 'binary';      // 'binary' | 'likert7'
+
+const LIKERT_PROPORTION = 0.10;     // 10% get Likert
+
+
+
+// --- Load Study 7 items JSON ---
+let datasetPromise = fetch('study7_items.json')
+  .then(resp => {
+    if (!resp.ok) throw new Error('Failed to load study7_items.json');
+    return resp.json();
+  })
+  .then(data => {
+    window.dataset = data;           // normalizeDataset() already uses this
+    console.log('Loaded', data.length, 'items from study7_items.json');
+    return data;
+  })
+  .catch(err => {
+    console.error('Error loading study7_items.json:', err);
+    alert('Error loading the experiment items. Please try reloading the page.');
+    return [];
+  });
+
+
+// --- RT quality thresholds (Levari-style) ---
+const FAST_RT_MS = 300;             // <300 ms = impossibly fast reading
+const MAX_FAST_PROP = 0.40;         // >40% ultra-fast = suspicious
+
+const EXTREME_SLOW_RT_MS = 120000;  // >120 s = very long pause
+const MAX_EXTREME_SLOW_PROP = 0.50; // only used as a warning
+
+
+  // timing + blur tracking
+  let tStart = 0;                // performance.now() at paint
+  let clickLocked = false;       // prevent double-submits
+  let blurActive = false, blurStart = 0, blurAccum = 0;
+  let networkStatusChanges = 0;
+
+  window.addEventListener('online',  () => networkStatusChanges++);
+  window.addEventListener('offline', () => networkStatusChanges++);
+  window.addEventListener('blur',    () => { if (!blurActive) { blurActive = true; blurStart = performance.now(); }});
+  window.addEventListener('focus',   () => { if (blurActive)  { blurAccum += (performance.now() - blurStart); blurActive = false; }});
+
+  // --- Local persistence (save order + state) ---
+  const STORAGE_STATE = 'ethical_study_state';
+  const STORAGE_ORDER = 'ethical_study_order';
+
+  function saveProgress() {
+  localStorage.setItem(
+    STORAGE_STATE,
+    JSON.stringify({
+      trialIndex,
+      responses,
+      currentCondition,
+      responseFormat,
+      participantId,
+      runStartTime,
+      stimuli          // <- store full stimuli with block, prevalence, type, etc.
+    })
+  );
+  localStorage.setItem(
+    STORAGE_ORDER,
+    JSON.stringify(stimuli.map(s => s.id))
+  );
+}
+
+
+  
+function loadProgressAndRebuild(dataset) {
+  const stateRaw = localStorage.getItem(STORAGE_STATE);
+  if (!stateRaw) return false;
+
+  const {
+    trialIndex: ti,
+    responses: rsp,
+    currentCondition: cond,
+    responseFormat: rf,
+    participantId: pid,
+    runStartTime: rs,
+    stimuli: savedStimuli
+  } = JSON.parse(stateRaw);
+
+  // If for some reason we do not have saved stimuli, do not resume
+  if (!savedStimuli || !savedStimuli.length) return false;
+
+  // Optionally you could verify that all item IDs still exist in the current dataset,
+  // but for a single deployed experiment this is usually not necessary.
+  stimuli        = savedStimuli;
+  trialIndex     = ti || 0;
+  responses      = Array.isArray(rsp) ? rsp : [];
+  currentCondition = cond || null;
+  responseFormat = rf || 'binary';
+  participantId    = pid || null;
+  runStartTime     = rs || Date.now();
+
+  return true;
+}
+
+
+  function clearProgress() {
+    localStorage.removeItem(STORAGE_STATE);
+    localStorage.removeItem(STORAGE_ORDER);
+  }
+
+ // --- Views ---
+ function showExperiment() {
+  // If user has not consented or has not completed demographics, do not show experiment.
+  const introVisible = !document.getElementById('intro')?.classList.contains('hidden');
+  const demoVisible  = !document.getElementById('demographics')?.classList.contains('hidden');
+
+  // If they are still on intro or demographics screens, keep them there.
+  if (introVisible || demoVisible) {
+    document.getElementById('experiment')?.classList.add('hidden');
+    document.getElementById('poststudy')?.classList.add('hidden');
+    document.getElementById('debrief')?.classList.add('hidden');
+    document.getElementById('personal-summary')?.classList.add('hidden');
+    document.getElementById('admin')?.classList.add('hidden');
+    return;
+  }
+
+  document.getElementById('poststudy')?.classList.add('hidden');
+  document.getElementById('experiment').classList.remove('hidden');
+  document.getElementById('personal-summary').classList.add('hidden');
+  document.getElementById('admin').classList.add('hidden');
+  document.getElementById('debrief').classList.add('hidden');
+}
+
+
+
+  function showAdmin(){
+    document.getElementById('admin').classList.remove('hidden');
+    document.getElementById('experiment').classList.add('hidden');
+    document.getElementById('personal-summary').classList.add('hidden');
+    document.getElementById('debrief').classList.add('hidden');
+    renderAdminView();
+  }
+
+  function showPersonalSummary(runParam) {
+  const run = runParam || lastRun;
+  if (!run) {
+    console.error('No run data available for summary');
+    return;
+  }
+
+  document.getElementById('debrief').classList.add('hidden');
+  document.getElementById('personal-summary').classList.remove('hidden');
+
+  const valid = run.trials.filter(
+    t => t.type !== 'catch' && (t.response === 0 || t.response === 1)
+  );
+  const total = valid.length || 1;
+  const rejected = valid.filter(t => t.response === 1).length;
+  const approved = valid.filter(t => t.response === 0).length;
+  const personalRate = rejected / total;
+
+  // clarify denominator (important for Likert midpoint exclusion)
+const stimNonCatch = run.trials.filter(t => t.type !== 'catch');
+const usedForRate = stimNonCatch.filter(
+  t => t.response === 0 || t.response === 1
+).length;
+const excluded = stimNonCatch.length - usedForRate;
+
+
+document.getElementById('personal-avg').textContent =
+  (personalRate * 100).toFixed(1) + '% rejection rate';
+
+
+    document.getElementById('personal-dist').innerHTML =
+  `<b>Approved (ethical):</b> ${approved}, <b>Rejected (unethical):</b> ${rejected}` +
+  (excluded > 0
+    ? `<br><span class="muted">Note: ${excluded} neutral (4) responses were excluded from the rejection-rate calculation.</span>`
+    : '');
+
+
+
+
+    // global snapshot (simple)
+    // This will fetch all runs to calculate global average. This is fine since it's only called once per user at the end of their run.
+    db.collection("runs").get().then(snapshot => {
+      const allRunsRaw = snapshot.docs.map(d => d.data());
+      const allRuns = allRunsRaw.filter(r =>
+  r &&
+  r.run_id &&
+  r.run_id !== run.run_id &&
+  !((r.qualityFlags || []).includes('failed_catch')) &&
+  !((r.qualityFlags || []).includes('too_many_fast_rts'))
+);
+
+      const aggr = aggregate(allRuns);
+      const globalRejected = aggr.distribution[1] || 0;
+      const globalTotal = (aggr.distribution[0] || 0) + globalRejected;
+      const globalRate = globalTotal ? (globalRejected / globalTotal) : 0;
+      const deltaPP = (personalRate - globalRate) * 100; // percentage points
+      const deltaLabel = (deltaPP >= 0 ? '+' : '') + deltaPP.toFixed(1) + ' pp vs global';
+
+
+      if (allRuns.length < 15) {
+  document.getElementById('global-avg').textContent = 'Hidden until 15 participants';
+} else {
+  const deltaPP = (personalRate - globalRate) * 100;
+  const deltaLabel = (deltaPP >= 0 ? '+' : '') + deltaPP.toFixed(1) + ' pp vs global';
+  document.getElementById('global-avg').textContent =
+    (globalRate * 100).toFixed(1) + '% rejected (' + deltaLabel + ')';
+
+}
+
+
+
+      // percentile (stricter than…)
+const rates = allRuns.map(r => {
+  const vt = (r.trials || []).filter(
+    t => t.type !== 'catch' && (t.response === 0 || t.response === 1)
+  );
+  if (!vt.length) return null;
+  const rej = vt.filter(t => t.response === 1).length;
+  return rej / vt.length;
+}).filter(v => v != null);
+
+const MIN_COMPARISON_N = 15;  // require at least 15 participants
+
+if (rates.length >= MIN_COMPARISON_N) {
+  const stricter = rates.filter(a => a < personalRate).length;
+  const pct = Math.round((stricter / rates.length) * 100);
+  document.getElementById('group-comparison').textContent =
+    `Compared with others, your rejection rate is higher than ${pct}% of participants.`;
+} else {
+  document.getElementById('group-comparison').textContent =
+    'We don’t have enough participants yet to make a meaningful comparison.';
+}
+
+
+    
+    }).catch(e => {
+      console.error('[personal summary] Cloud fetch failed:', e);
+      document.getElementById('global-avg').textContent = 'N/A';
+      document.getElementById('group-comparison').textContent = 'Could not load global data.';
+    });
+  }
+
+  // --- Utils ---
+  function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+  function makeRunId(){ return `run_${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
+
+
+
+// --- Design constants ---
+
+// Total number of NON-catch scenarios per participant
+const TOTAL_TRIALS = 50;
+
+// Target prevalence in STABLE condition: 33.3% unethical
+const STABLE_PREVALENCE = 0.333;
+
+// Block structure only for the DECREASING condition
+// (pattern: 33% → 25% → 16% → ~8% / 0%)
+const DECREASING_BLOCKS = [
+  { size: 20, unethical: 7 },  // ~35%
+  { size: 10, unethical: 2 },  // 20%
+  { size: 10, unethical: 1 },  // 10%
+  { size: 10, unethical: 0 }   // 0%
+];
+
+
+// current between-subjects condition for this run
+let currentCondition = null;
+
+function normalizeDataset() {
+  const raw = window.dataset || window.ethicalTexts || [];
+  if (!raw.length) throw new Error('No dataset found: expected window.dataset or window.ethicalTexts');
+
+  if (typeof raw[0] === 'object') {
+    return raw.map((r, i) => ({
+      id: r.id || r.item || `item_${i+1}`,
+      text: r.text ?? r.stimulus ?? '',
+      category: (r.category === 'ethical' || r.category === 'unethical') ? r.category : 'ambiguous',
+      tag: r.tag || null
+    }));
+  }
+  // fallback: array of strings -> ambiguous
+  return raw.map((text, i) => ({ id: `item_${i+1}`, text, category: 'ambiguous', tag: null }));
+}
+
+function takeFromPool(pool, n) {
+  const taken = [];
+  for (let i = 0; i < n && pool.length > 0; i++) {
+    taken.push(pool.pop());
+  }
+  return taken;
+}
+
+  
+// Build the 50-trial sequence for one condition (without catch trials)
+function buildBaseSequence(condition) {
+  const data = normalizeDataset();
+
+  // Pools per category
+  const ethicalPool   = shuffle(data.filter(d => d.category === 'ethical'));
+  const ambiguousPool = shuffle(data.filter(d => d.category === 'ambiguous'));
+  const unethicalPool = shuffle(data.filter(d => d.category === 'unethical'));
+
+  const seq = [];
+
+  // ---------- STABLE CONDITION: fixed ~33% unethical, no real prevalence change ----------
+  if (condition === 'stable') {
+    const targetUnethical = Math.min(
+      Math.round(TOTAL_TRIALS * STABLE_PREVALENCE),
+      unethicalPool.length
+    );
+
+    // 1) pick unethical
+    seq.push(...takeFromPool(unethicalPool, targetUnethical));
+
+    // 2) fill rest with ethical + ambiguous
+    let remaining = TOTAL_TRIALS - seq.length;
+    let nEthical  = Math.ceil(remaining / 2);
+    let nAmbig    = remaining - nEthical;
+
+    nEthical = Math.min(nEthical, ethicalPool.length);
+    nAmbig   = Math.min(nAmbig,   ambiguousPool.length);
+
+    seq.push(...takeFromPool(ethicalPool, nEthical));
+    seq.push(...takeFromPool(ambiguousPool, nAmbig));
+
+    // 3) back-fill if still short
+    while (seq.length < TOTAL_TRIALS) {
+      const pool = [ethicalPool, ambiguousPool, unethicalPool].find(p => p.length > 0);
+      if (!pool) break;
+      seq.push(pool.pop());
+    }
+
+    // shuffle and then assign block + prevalence
+    const shuffled = shuffle(seq);
+
+    const blockSizes = [20, 10, 10, 10];
+    let currentBlock = 1;
+    let blockEnd = blockSizes[0]; // index where block 1 ends (0-based)
+
+    const annotated = shuffled.map((item, idx) => {
+      while (currentBlock < blockSizes.length && idx >= blockEnd) {
+        currentBlock++;
+        blockEnd += blockSizes[currentBlock - 1];
+      }
+      return {
+        ...item,
+        block: currentBlock,        // 1..4
+        prevalence: STABLE_PREVALENCE
+      };
+    });
+
+    return annotated;
+  }
+
+  // ---------- DECREASING CONDITION: real block structure ----------
+  const blocks = DECREASING_BLOCKS;
+  let blockIndex = 0;
+
+  for (const block of blocks) {
+    const blockItems = [];
+    const thisBlock = blockIndex + 1;
+    const thisPrev  = block.unethical / block.size;
+
+    // unethical in this block
+    const nU = Math.min(block.unethical, unethicalPool.length);
+    takeFromPool(unethicalPool, nU).forEach(it => {
+      blockItems.push({ ...it, block: thisBlock, prevalence: thisPrev });
+    });
+
+    // fill rest with ethical + ambiguous
+    const remaining = block.size - blockItems.length;
+    let nEthical = Math.ceil(remaining / 2);
+    let nAmbig   = remaining - nEthical;
+
+    nEthical = Math.min(nEthical, ethicalPool.length);
+    nAmbig   = Math.min(nAmbig,   ambiguousPool.length);
+
+    takeFromPool(ethicalPool, nEthical).forEach(it => {
+      blockItems.push({ ...it, block: thisBlock, prevalence: thisPrev });
+    });
+    takeFromPool(ambiguousPool, nAmbig).forEach(it => {
+      blockItems.push({ ...it, block: thisBlock, prevalence: thisPrev });
+    });
+
+    // back-fill if still short
+    while (blockItems.length < block.size) {
+      const pool = [unethicalPool, ethicalPool, ambiguousPool].find(p => p.length > 0);
+      if (!pool) break;
+      const it = pool.pop();
+      blockItems.push({ ...it, block: thisBlock, prevalence: thisPrev });
+    }
+
+    seq.push(...shuffle(blockItems));
+    blockIndex++;
+  }
+
+  // Safety trim/pad
+  if (seq.length > TOTAL_TRIALS) seq.length = TOTAL_TRIALS;
+
+  return seq;
+}
+
+// Catch questions after ~20, ~40, and at the very end (binary format: Reject/Approve)
+function withCatchQuestions(seq) {
+
+  // For binary participants: expectedBinary in {0,1}
+  const EXPECTED_BINARY = [1, 0, 1];
+
+  // For Likert participants: expectedLikert in {1..7}
+  // Pick values that are not the midpoint to reduce ambiguity.
+  const EXPECTED_LIKERT = [2, 6, 2];
+
+  const makeCatch = (k, expectedBinary, expectedLikert) => ({
+  id: `catch_${k}`,
+  // Keep a plausible “proposal-ish” wrapper so it doesn’t look blank
+  text_binary: `Please answer the following question to confirm you are paying attention. If you are reading this, click "${expectedBinary === 1 ? 'Reject' : 'Approve'}".`,
+  text_likert: `Please answer the following question to confirm you are paying attention. If you are reading this, select ${expectedLikert}.`,
+  category: 'catch',
+  type: 'catch',
+  expectedBinary,
+  expectedLikert,
+
+  // Optional: prevent undefined fields later
+  block: null,
+  prevalence: null
+});
+
+
+  const out = [...seq];
+  if (seq.length > 20) out.splice(20, 0, makeCatch(1, EXPECTED_BINARY[0], EXPECTED_LIKERT[0]));
+  if (seq.length > 40) out.splice(41, 0, makeCatch(2, EXPECTED_BINARY[1], EXPECTED_LIKERT[1]));
+  out.push(makeCatch(3, EXPECTED_BINARY[2], EXPECTED_LIKERT[2]));
+  return out;
+}
+
+
+  // --- Experiment flow ---
+
+  async function startExperiment() {
+  // make sure items are loaded
+  await datasetPromise;
+  const resumed = loadProgressAndRebuild(window.dataset);
+if (resumed) {
+  document.getElementById('intro')?.classList.add('hidden');
+  document.getElementById('demographics')?.classList.add('hidden');
+  document.getElementById('poststudy')?.classList.add('hidden');
+  document.getElementById('debrief')?.classList.add('hidden');
+  document.getElementById('personal-summary')?.classList.add('hidden');
+  document.getElementById('admin')?.classList.add('hidden');
+
+  document.getElementById('experiment')?.classList.remove('hidden');
+
+  renderTrial();  
+  return;
+}
+
+  runStartTime = Date.now();
+
+  // show experiment card (if you use showExperiment, keep it here)
+  document.getElementById('experiment').classList.remove('hidden');
+  document.getElementById('personal-summary').classList.add('hidden');
+  document.getElementById('admin').classList.add('hidden');
+  document.getElementById('debrief').classList.add('hidden');
+
+  // Random assignment: stable vs decreasing  and formate binary or likert
+  currentCondition = Math.random() < 0.5 ? 'stable' : 'decreasing';
+  responseFormat = (Math.random() < LIKERT_PROPORTION) ? 'likert7' : 'binary';
+
+
+  const baseSeq = buildBaseSequence(currentCondition);
+  const fullSeq = withCatchQuestions(baseSeq);
+
+  stimuli    = fullSeq;
+  trialIndex = 0;
+  responses  = [];
+  renderTrial();
+}
+
+
+// Bind the consent and demographics buttons
+document.addEventListener('DOMContentLoaded', () => {
+  const intro = document.getElementById('intro');
+  const agreeBtn = document.getElementById('agree-btn');
+  const ageConsent = document.getElementById('ageConsent');
+
+  if (!intro || !agreeBtn || !ageConsent) {
+    console.error('Intro consent elements not found.');
+    return;
+  }
+
+  agreeBtn.disabled = true;
+  ageConsent.addEventListener('change', () => {
+    agreeBtn.disabled = !ageConsent.checked;
+  });
+
+  agreeBtn.addEventListener('click', () => {
+    if (!ageConsent.checked) return;
+    intro.classList.add('hidden');
+    document.getElementById('demographics').classList.remove('hidden');
+  });
+// ---------- Language dropdown ----------
+const LANGUAGES = [
+  "Arabic","English","French","Dutch","German","Spanish","Italian","Portuguese",
+  "Russian","Ukrainian","Polish","Turkish","Persian","Urdu","Hindi","Bengali",
+  "Chinese (Mandarin)","Japanese","Korean","Vietnamese","Thai",
+  "Swahili","Amharic","Hebrew","Greek","Other"
+];
+
+const langSelect = document.getElementById('demo-lang-primary');
+if (langSelect) {
+  LANGUAGES.forEach(l => {
+    const opt = document.createElement('option');
+    opt.value = l;
+    opt.textContent = l;
+    langSelect.appendChild(opt);
+  });
+}
+// ---------- Show / hide "Other" fields ----------
+const genderSelect = document.getElementById('demo-gender');
+const genderOtherWrap = document.getElementById('gender-other-wrap');
+const genderOtherInput = document.getElementById('demo-gender-text');
+
+if (genderSelect && genderOtherWrap && genderOtherInput) {
+  genderSelect.addEventListener('change', () => {
+    const isOther = genderSelect.value === 'Other';
+    genderOtherWrap.classList.toggle('hidden', !isOther);
+    if (!isOther) genderOtherInput.value = '';
+  });
+}
+
+const langOtherWrap = document.getElementById('lang-other-wrap');
+const langOtherInput = document.getElementById('demo-lang-other');
+
+if (langSelect && langOtherWrap && langOtherInput) {
+  langSelect.addEventListener('change', () => {
+    const isOther = langSelect.value === 'Other';
+    langOtherWrap.classList.toggle('hidden', !isOther);
+    if (!isOther) langOtherInput.value = '';
+  });
+}
+
+// ---------- Hide validation error as soon as user edits ----------
+const demoError = document.getElementById('demo-error');
+const demoFields = [
+  'demo-gender','demo-gender-text','demo-age','demo-handedness',
+  'demo-glasses','demo-english','demo-lang-primary','demo-lang-other'
+];
+
+demoFields.forEach(id => {
+  const el = document.getElementById(id);
+  if (!el || !demoError) return;
+  el.addEventListener('input', () => demoError.classList.add('hidden'));
+  el.addEventListener('change', () => demoError.classList.add('hidden'));
+});
+
+const nextBtn = document.getElementById('demographics-next');
+if (nextBtn) {
+  nextBtn.addEventListener('click', () => {
+    const err = document.getElementById('demo-error');
+
+    const gender = document.getElementById('demo-gender').value;
+    const genderText = document.getElementById('demo-gender-text').value.trim();
+    const age = document.getElementById('demo-age').value;
+    const handedness = document.getElementById('demo-handedness').value;
+    const glasses = document.getElementById('demo-glasses').value;
+    const english = document.getElementById('demo-english').value;
+    const primaryLang = document.getElementById('demo-lang-primary').value;
+    const otherLang = document.getElementById('demo-lang-other').value.trim();
+
+    const ageNum = parseInt(age, 10);
+
+    const invalid =
+      !gender ||
+      !age ||
+      !handedness ||
+      !glasses ||
+      !english ||
+      !primaryLang ||
+      ageNum < 18 || ageNum > 99 ||
+      (gender === 'Other' && !genderText) ||
+      (primaryLang === 'Other' && !otherLang);
+
+    if (invalid) {
+      err.classList.remove('hidden');
+      return;
+    }
+    err.classList.add('hidden');
+
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    participantId = [...Array(6)]
+      .map(() => chars.charAt(Math.floor(Math.random() * chars.length)))
+      .join('');
+
+    demographics = {
+      gender,
+      gender_TEXT: gender === 'Other' ? genderText : '',
+      age,
+      handedness,
+      glasses,
+      english,
+      langs: primaryLang === 'Other' ? otherLang : primaryLang
+    };
+
+    document.getElementById('demographics').classList.add('hidden');
+    startExperiment();
+  });
+}
+}); 
+
+
+
+
+function renderTrial() {
+  clickLocked = false;
+  blurAccum = 0;
+
+  const tr = stimuli[trialIndex];
+
+  const displayText =
+    (tr.type === 'catch')
+      ? (responseFormat === 'likert7' ? tr.text_likert : tr.text_binary)
+      : tr.text;
+
+  let btns = '';
+
+  if (responseFormat === 'likert7') {
+    btns = Array.from({ length: 7 }, (_, i) => i + 1).map(n => `
+      <button class="rating-btn" onclick="recordResponse(${n})" aria-label="Select ${n}">
+        ${n}
+      </button>
+    `).join('');
+  } else {
+    btns = `
+      <button class="rating-btn" onclick="recordResponse(1)" aria-label="Reject">Reject</button>
+      <button class="rating-btn" onclick="recordResponse(0)" aria-label="Approve">Approve</button>
+    `;
+  }
+
+  const likertNote =
+  responseFormat === 'likert7'
+    ? `<p class="muted" style="margin-top:8px;">
+         <b>Scale:</b> 1 = Strongly disapprove (unethical), 7 = Strongly approve (ethical)
+       </p>`
+    : '';
+
+  const innerHtml = `
+    <div style="text-align:center">
+      <h3 style="margin-top:0;">Should this experiment be allowed to be conducted?</h3>
+      <div class="text-box" aria-live="polite">${displayText}</div>
+     <div class="rating-scale">${btns}</div>
+${likertNote}
+<p class="muted" style="margin-top:.9rem;">Trial ${trialIndex + 1} / ${stimuli.length}</p>
+
+    </div>
+  `;
+
+  document.getElementById('experiment').innerHTML = innerHtml;
+  requestAnimationFrame(() => { tStart = performance.now(); });
+}
+
+
+
+
+
+  async function recordResponse(rating){
+  if (clickLocked) return;
+  clickLocked = true;
+
+  const tEnd = performance.now();
+  const rt   = Math.max(0, tEnd - tStart);   // keep raw RT, like Levari
+
+  const tr = stimuli[trialIndex];
+  const displayText =
+  (tr.type === 'catch')
+    ? (responseFormat === 'likert7' ? tr.text_likert : tr.text_binary)
+    : tr.text;
+
+
+  const isCatch = tr.type === 'catch';
+
+let catch_ok = null;
+if (isCatch) {
+  if (responseFormat === 'likert7') {
+    catch_ok = (rating === (tr.expectedLikert ?? 2));
+  } else {
+    catch_ok = (rating === (tr.expectedBinary ?? 1));
+  }
+}
+
+let responseBinary = rating; // binary participants already 0/1
+
+if (!isCatch && responseFormat === 'likert7') {
+  // Map 1..7 -> binary. Choose a rule.
+  if (rating <= 3) responseBinary = 1; //reject
+  else if (rating >= 5) responseBinary = 0; //Approve
+  else responseBinary = null;
+}
+
+  const totalNonCatch = stimuli.filter(s => s.type !== 'catch').length;
+  const logicalTrialNumber = trialIndex + 1;
+
+// simple 5-bin time variable (1–5) based on position in sequence
+  const timebin5 = Math.min(
+  5,
+  Math.floor((logicalTrialNumber - 1) / (totalNonCatch / 5)) + 1
+);
+
+// map to Levari-style columns
+responses.push({
+  participant: participantId || null,
+  item: tr.id,
+  condition: currentCondition,
+  block: tr.block ?? null,
+  trial: logicalTrialNumber,
+
+  // store both
+  response: responseBinary,          // normalized binary (0/1/null for midpoint)
+  rating: rating,                    // raw response (0/1 OR 1..7)
+  response_format: responseFormat,   // 'binary' or 'likert7'
+  catch_ok: catch_ok,
+
+  timebin5: timebin5,
+  rt: rt,
+  prevalence: tr.prevalence ?? null,
+  order: logicalTrialNumber,
+
+  gender: demographics.gender || '',
+  gender_TEXT: demographics.gender_TEXT || '',
+  age: demographics.age || '',
+  handedness: demographics.handedness || '',
+  glasses: demographics.glasses || '',
+  english: demographics.english || '',
+  langs: demographics.langs || '',
+  ease: postStudy.ease || '',
+  difficulty: postStudy.difficulty || '',
+  did_freq_change: postStudy.did_freq_change || '',
+  def: postStudy.def || '',
+  hypothesis: postStudy.hypothesis || '',
+  comments: postStudy.comments || '',
+
+  text: displayText,
+  category: tr.category,
+  type: tr.type || 'stim',
+  blur_ms: blurAccum
+});
+
+
+
+
+  trialIndex++;
+  saveProgress();
+
+  if (trialIndex < stimuli.length) {
+  renderTrial();
+  clickLocked = false;
+} else {
+  // All trials done: show post-study questionnaire
+  document.getElementById('experiment').classList.add('hidden');
+  document.getElementById('poststudy').classList.remove('hidden');
+}
+  }
+
+// key shortcut
+document.addEventListener('keydown', (e) => {
+  const exp = document.getElementById('experiment');
+  if (!exp || exp.classList.contains('hidden')) return;
+
+  const tr = stimuli[trialIndex];
+  if (!tr) return;
+
+  if (responseFormat === 'likert7') {
+    if (e.key >= '1' && e.key <= '7') {
+      recordResponse(parseInt(e.key, 10));
+    }
+  } else {
+    if (e.key === '1') recordResponse(1);      // Reject
+    else if (e.key === '2') recordResponse(0); // Approve
+  }
+});
+
+
+
+  // --- Quality flags ---
+  function calculateQualityFlags(trials) {
+  const flags = [];
+  const n = trials.length;
+
+  // 1) Catch trials
+  const failedCatches = trials.filter(
+    t => t.type === 'catch' && t.catch_ok === false
+  ).length;
+  if (failedCatches > 0) flags.push('failed_catch');
+
+  // 2) Straightlining (always same answer on stim trials)
+  const onlyStim = trials.filter(t => t.type !== 'catch');
+
+if (onlyStim.length) {
+  const values = onlyStim
+    .map(t => (t.response_format === 'likert7' ? t.rating : t.response))
+    .filter(v => v !== null && v !== undefined);
+
+  if (values.length && new Set(values).size === 1) {
+    flags.push('straightlining');
+  }
+}
+
+
+  // 3) RT-based QC (no punishment for slow readers)
+  const rts = onlyStim
+    .map(t => t.rt)
+    .filter(v => typeof v === 'number' && !isNaN(v));
+
+  if (rts.length >= Math.ceil(onlyStim.length * 0.5)) {
+    const fastProp = rts.filter(rt => rt > 0 && rt < FAST_RT_MS).length / rts.length;
+    const extremeSlowProp = rts.filter(rt => rt > EXTREME_SLOW_RT_MS).length / rts.length;
+
+    if (fastProp > MAX_FAST_PROP) {
+      flags.push('too_many_fast_rts');          // main RT exclusion
+    }
+    if (extremeSlowProp > MAX_EXTREME_SLOW_PROP) {
+      flags.push('many_extreme_slow_rts');      // warning, not necessarily exclusion
+    }
+  }
+
+  // 4) Blur / tab switching
+  const blurHeavy = trials.filter(t => (t.blur_ms || 0) > 1000).length / (n || 1);
+  if (blurHeavy > 0.20) flags.push('excessive_blur');
+
+  // 5) Very short runs
+  if (n < 20) flags.push('too_few_trials');
+
+  return flags;
+}
+
+  // --- Save run ---
+  let saving = false;
+  async function saveRunToCloud(run) {
+    await db.collection("runs").doc(run.run_id).set(run);
+  }
+
+  async function finishRun(){
+    if (saving) return;
+    saving = true;
+
+    try {
+      const run = {
+  run_id: makeRunId(),
+  ts: Date.now(),
+  condition: currentCondition,
+  response_format: responseFormat,
+  duration_ms: runStartTime ? (Date.now() - runStartTime) : null,
+  participant: participantId || null,
+  demographics,
+  postStudy,
+  meta: {
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    ua: navigator.userAgent,
+    screen: [innerWidth, innerHeight],
+    networkStatusChanges
+  },
+  trials: responses,
+  qualityFlags: calculateQualityFlags(responses),
+  ts_server: firebase.firestore.FieldValue.serverTimestamp()
+};
+
+console.log('Condition for this run:', run.condition);  // ← add this line
+
+lastRun = run;
+
+await saveRunToCloud(run);
+ clearProgress();
+
+      document.getElementById('experiment').classList.add('hidden');
+      document.getElementById('debrief').classList.remove('hidden');
+
+     } catch (err) {
+      console.error('finishRun error', err);
+      alert('Saving failed. Your progress is still stored locally—please try again.');
+      saving = false;
+      return;
+    }
+
+    saving = false;
+  }
+
+  // --- Aggregation 
+  function aggregate(runs) {
+    const out = {
+      totalRuns: runs.length,
+      totalTrials: 0,
+      distribution: Array(2).fill(0), // [approved, rejected]
+      textRatings: {},
+      rts: [],
+      categoryStats: {
+        ethical:   { total:0, count:0, correct:0 },
+        ambiguous: { total:0, count:0, correct:0 },
+        unethical: { total:0, count:0, correct:0 }
+      },
+      slopes: []
+    };
+
+    for (const run of runs) {
+      if (!run || !run.trials) continue;
+      let xSum=0, ySum=0, xySum=0, x2Sum=0;
+
+      for (let i=0; i<run.trials.length; i++) {
+  const tr = run.trials[i];
+  if (tr.type === 'catch') continue;
+
+  out.totalTrials++;
+
+  const resp = (tr.response === 0 || tr.response === 1) ? tr.response : NaN;
+  if (resp === 0 || resp === 1) {
+    out.distribution[resp]++;
+
+    const key = tr.text;
+    if (!out.textRatings[key]) out.textRatings[key] = { total:0, count:0 };
+    out.textRatings[key].total += resp;
+    out.textRatings[key].count++;
+
+    // category stats
+    if (tr.category && out.categoryStats[tr.category]) {
+      const bucket = out.categoryStats[tr.category];
+      bucket.total += resp;
+      bucket.count++;
+      if ((tr.category === 'ethical' && resp === 0) ||
+          (tr.category === 'unethical' && resp === 1)) {
+        bucket.correct++;
+      }
+    }
+
+    xSum += i;
+    ySum += resp;
+    xySum += i * resp;
+    x2Sum += i * i;
+  }
+
+  if (tr.rt != null) out.rts.push(tr.rt);
+}
+
+
+      const n = run.trials.length;
+      const denom = (n * x2Sum - xSum * xSum);
+      const slope = denom ? (n*xySum - xSum*ySum) / denom : 0;
+      out.slopes.push(slope);
+    }
+    return out;
+  }
+
+  // --- Admin (simple) ---
+  async function renderAdminView() {
+    const snapshot = await db.collection("runs").orderBy('ts_server','desc').limit(200).get();
+    const runs = snapshot.docs.map(doc => doc.data());
+    const tableBody = document.getElementById('admin-table-body');
+    tableBody.innerHTML = '';
+    runs.forEach(run => {
+      const row = tableBody.insertRow();
+      row.insertCell().textContent = run.run_id || '(no id)';
+      row.insertCell().textContent = run.ts ? new Date(run.ts).toLocaleString() : '(n/a)';
+      row.insertCell().textContent = Array.isArray(run.qualityFlags) && run.qualityFlags.length ? run.qualityFlags.join(', ') : 'None';
+    });
+  }
+
+  // --- Notices ---
+  function showDataNotice(msg){
+    let el = document.getElementById('dataNotice');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'dataNotice';
+      el.style.cssText = 'position:fixed;right:12px;bottom:12px;padding:8px 12px;border-radius:8px;font:12px system-ui;background:#fff3cd;border:1px solid #ffe69c;color:#664d03;box-shadow:0 2px 8px rgba(0,0,0,.08);z-index:1001;';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+  function hideDataNotice(){ const el = document.getElementById('dataNotice'); if (el) el.style.display = 'none'; }
+
+  // --- Startup & auto-refresh ---
+  window.onload = () => {
+    if (window.location.hash === '#admin') showAdmin();
+  };
+
+  // Bind post-study submit -> save run
+(function bindPostStudy() {
+  const bind = () => {
+    const btn = document.getElementById('poststudy-submit');
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
+      // 1) Read answers into postStudy
+      postStudy = {
+        ease: document.getElementById('q-ease').value || '',
+        difficulty: document.getElementById('q-difficulty').value || '',
+        did_freq_change: document.getElementById('q-did-freq-change').value || '',
+        def: document.getElementById('q-def').value || '',
+        hypothesis: document.getElementById('q-hypothesis').value || '',
+        comments: document.getElementById('q-comments').value || ''
+      };
+
+      // 2) Copy those answers into every trial row
+      responses = responses.map(tr => ({
+        ...tr,
+        ease: postStudy.ease,
+        difficulty: postStudy.difficulty,
+        did_freq_change: postStudy.did_freq_change,
+        def: postStudy.def,
+        hypothesis: postStudy.hypothesis,
+        comments: postStudy.comments
+      }));
+
+      // 3) Proceed to save
+      document.getElementById('poststudy').classList.add('hidden');
+      finishRun();
+    });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bind);
+  } else {
+    bind();
+  }
+})();
+
+
+
+  // expose
+  window.showExperiment  = showExperiment;
+  window.showAdmin       = showAdmin;
+  window.startExperiment = startExperiment;
+  window.recordResponse  = recordResponse;
+  window.showPersonalSummary = showPersonalSummary;
+
+
+  // --- AUTO RESUME AFTER REFRESH ---
+  window.addEventListener('load', async () => {
+  await datasetPromise;
+
+  const resumed = loadProgressAndRebuild(window.dataset);
+  if (!resumed) return;
+
+  // Hide everything first
+  document.getElementById('intro')?.classList.add('hidden');
+  document.getElementById('demographics')?.classList.add('hidden');
+  document.getElementById('debrief')?.classList.add('hidden');
+  document.getElementById('personal-summary')?.classList.add('hidden');
+  document.getElementById('admin')?.classList.add('hidden');
+
+  // If trials are finished, resume at post-study instead of trying to render a new trial
+  if (Array.isArray(stimuli) && trialIndex >= stimuli.length) {
+    document.getElementById('experiment')?.classList.add('hidden');
+    document.getElementById('poststudy')?.classList.remove('hidden');
+    return;
+  }
+
+  // Otherwise resume the experiment
+  document.getElementById('poststudy')?.classList.add('hidden');
+  document.getElementById('experiment')?.classList.remove('hidden');
+  renderTrial();
+});
+
+
+
+  </script>
+</body>
+</html>
